@@ -1,66 +1,61 @@
-import asyncio, sys, subprocess, json
-from pathlib import Path
+import asyncio, sys, subprocess
 
 """
-Пусковой стартовый скрипт (после клонирования), для сборки зависимостей и скачивания необходимых компонентов.
-Важно! Перед запуском должно быть создано виртуальное окружение, и название папки должно быть .venv
+Скрипт установки и сборки проекта.
+Требуется виртуальное окружение в папке .venv
+
+Все шаги (простая установка после клонирования с git):     python start.py all
+По отдельности:
+  sync        - установить зависимости
+  dwn         - скачать материалы
+  build       - собрать .exe/bin
 """
-steps = 4
-lock = asyncio.Lock()
-
-
-async def installer_log(step: int, description: str):
-    """Запись текущей операции в json (для интеграции с лаунчером)"""
-    print(f'{step}.{description}')
-    async with lock:
-        with open(file=Path('installer.json'), mode='w', encoding='utf8') as f:
-            f.write(
-                json.dumps(
-                    {'step': step, 'steps': steps, 'description': description},
-                    indent=2,
-                    ensure_ascii=False,
-                )
-            )
+args = sys.argv
 
 
 async def start():
-    await installer_log(step=1, description='установка uv')
-    cmd = [sys.executable, '-m', 'pip', 'install', 'uv']
-    subprocess.run(cmd, shell=False)
+    if 'sync' in args or 'all' in args:
+        if 'all' in args:
+            print(f'Установка uv и зависимостей', flush=True)
+        cmd = [sys.executable, '-m', 'pip', 'install', 'uv']
+        subprocess.run(cmd, shell=False)
 
-    await installer_log(step=2, description='установка библиотек')
-    cmd = [sys.executable, '-m', 'uv', 'sync']
-    subprocess.run(cmd, shell=False)
+        cmd = [sys.executable, '-m', 'uv', 'sync']
+        subprocess.run(cmd, shell=False)
 
-    await installer_log(step=3, description='загрузка моделей')
-    from infrastructure_http_clients import file_downloader, DownloadFileType
-    from config import settings
+    if 'dwn' in args or 'all' in args:
+        if 'all' in args:
+            print(f'Загрузка дополнительных материалов', flush=True)
+        from infrastructure_http_clients import file_downloader, DownloadFileType
+        from config import settings
 
-    models_dir = settings.models_dir_prop  # путь брать из property (дорисовка абсолютного к относительному)
+        models_dir = settings.models_dir_prop  # путь брать из property (дорисовка абсолютного к относительному)
 
-    download_list = [
-        DownloadFileType(
-            url_list=[
-                'https://models.silero.ai/models/tts/ru/v5_5_ru.pt',
-            ],
-            target_dir=models_dir,
-            filename='v5_5_ru.pt',
-            replace=False,
-        ),
-        DownloadFileType(
-            url_list=[
-                'https://models.silero.ai/models/tts/en/v3_en.pt',
-            ],
-            target_dir=models_dir,
-            filename='v3_en.pt',
-            replace=False,
-        ),
-    ]
-    await file_downloader(download_list=download_list, console_progress_bar=True)
+        download_list = [
+            DownloadFileType(
+                url_list=[
+                    'https://models.silero.ai/models/tts/ru/v5_5_ru.pt',
+                ],
+                target_dir=models_dir,
+                filename='v5_5_ru.pt',
+                replace=False,
+            ),
+            DownloadFileType(
+                url_list=[
+                    'https://models.silero.ai/models/tts/en/v3_en.pt',
+                ],
+                target_dir=models_dir,
+                filename='v3_en.pt',
+                replace=False,
+            ),
+        ]
+        await file_downloader(download_list=download_list, console_progress_bar=True)
 
-    await installer_log(step=4, description='сборка .exe/bin')
-    from build import build, parameters
-    build(parameters=parameters)
+    if 'build' in args or 'all' in args:
+        if 'all' in args:
+            print(f'Сборка .exe/bin', flush=True)
+        from build import build, parameters
+        build(parameters=parameters)
 
 
 if __name__ == '__main__':
