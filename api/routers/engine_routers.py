@@ -50,8 +50,10 @@ def routers_factory(engine: Engine) -> APIRouter:
     @router.post('/execute/', status_code=status.HTTP_200_OK)
     async def execute(say_request: SayRequest):
         """Воспроизведение аудио через http."""
+        # вставка нормализатора
         lang = select_language(speaker=say_request.speaker)
-        text = normalizer(lang=lang, text=say_request.text)  # noqa
+        text = normalizer(lang=lang, text=say_request.text) if lang is not None else say_request.text  # noqa
+        # вставка нормализатора
         await engine.say(text=text, speaker=say_request.speaker, add=say_request.add)
         return {'result': 'Текст воспроизводится'}
 
