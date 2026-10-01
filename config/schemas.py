@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 from infrastructure_path_utils import get_root_dir_path
 from pathlib import Path
+from datetime import datetime
 
 root_dir = get_root_dir_path()
 
@@ -18,11 +19,12 @@ class SayRequest(BaseModel):
     text: str = Field(..., description='текст который должна произнести модель')
     speaker: str = Field(..., description='голосом которым модель должна произнести текст')
     add: bool = Field(default=False, description='текст добавляется к произносимому, или это прерывание и новый текст?')
+
     model_config = ConfigDict(
         json_schema_extra={
             'examples': [
                 {
-                    'text': 'Привет! Я синтезатор, речи, введи текст а я его озвучу.',
+                    'text': f'Привет! Я синтезатор, речи, введи текст а я его озвучу. Сегодня {datetime.now().strftime("%d.%m.%Y")}',
                     'speaker': 'xenia',
                     'add': False,
                 }
